@@ -1,5 +1,5 @@
 senlin-dashboard (0.1.0-1) experimental; urgency=medium
 
-  * Initial release. (Closes: #)
+  * Initial release. (Closes: #812964)
 
  -- Thomas Goirand <zigo@debian.org>  Mon, 25 Jan 2016 21:39:26 +0800
