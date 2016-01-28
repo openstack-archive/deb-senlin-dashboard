@@ -1,0 +1,41 @@
+Source: senlin-dashboard
+Section: python
+Priority: extra
+Maintainer: PKG OpenStack <openstack-devel@lists.alioth.debian.org>
+Uploaders: Thomas Goirand <zigo@debian.org>,
+Build-Depends: debhelper (>= 9),
+               dh-python,
+               openstack-pkg-tools,
+               python-all,
+               python-pbr (>= 1.8),
+               python-setuptools,
+               python-sphinx,
+Build-Depends-Indep: openstack-dashboard (>= 9.0.0~b2),
+                     python-babel,
+                     python-unittest2,
+                     testrepository,
+Standards-Version: 3.9.6
+Homepage: https://github.com/stackforge/senlin-dashboard
+Vcs-Git: git://anonscm.debian.org/openstack/senlin-dashboard.git
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=openstack/senlin-dashboard.git;a=summary
+
+Package: python-senlin-dashboard
+Architecture: all
+Depends: openstack-dashboard (>= 9.0.0~b2),
+         python-pbr (>= 1.8),
+         ${misc:Depends},
+         ${python:Depends},
+Description: clustering service for OpenStack clouds - dashboard plugin
+ Senlin is a clustering service for OpenStack clouds. It creates and operates
+ clusters of homogenous objects exposed by other OpenStack services. The goal
+ is to make the orchestration of collections of similar objects easier.
+ .
+ Senlin provides RESTful APIs to users so that they can associate various
+ policies to a cluster. Sample policies include placement policy, load
+ balancing policy, health policy, scaling policy, update policy and so on.
+ .
+ Senlin is designed to be capable of managing different types of objects. An
+ object's lifecycle is managed using profile type implementations, which are
+ themselves plugins.
+ .
+ This package contains the OpenStack dashboard (aka Horizon) plugin.
