@@ -36,8 +36,8 @@ Build-Depends-Indep: nodeenv (>= 0.9.4),
                      testrepository,
 Standards-Version: 3.9.6
 Homepage: https://github.com/stackforge/senlin-dashboard
-Vcs-Git: git://anonscm.debian.org/openstack/senlin-dashboard.git
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=openstack/senlin-dashboard.git;a=summary
+Vcs-Git: https://anonscm.debian.org/git/openstack/senlin-dashboard.git
+Vcs-Browser: https://anonscm.debian.org/cgit/openstack/senlin-dashboard.git/
 
 Package: python-senlin-dashboard
 Architecture: all
