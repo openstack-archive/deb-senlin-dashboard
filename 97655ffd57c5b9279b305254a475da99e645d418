@@ -1,0 +1,9 @@
+Code-Review+1: Ethan Lynn <xuanlangjian@gmail.com>
+Code-Review+2: Qiming Teng <tengqim@cn.ibm.com>
+Workflow+1: Qiming Teng <tengqim@cn.ibm.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 06 May 2016 07:04:21 +0000
+Reviewed-on: https://review.openstack.org/312501
+Project: openstack/deb-senlin-dashboard
+Branch: refs/heads/stable/mitaka
