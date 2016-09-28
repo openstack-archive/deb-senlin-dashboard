@@ -1,0 +1,8 @@
+Code-Review+2: Liuqing Jing <jing.liuqing@99cloud.net>
+Workflow+1: Liuqing Jing <jing.liuqing@99cloud.net>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 28 Sep 2016 10:15:28 +0000
+Reviewed-on: https://review.openstack.org/375566
+Project: openstack/deb-senlin-dashboard
+Branch: refs/heads/master
