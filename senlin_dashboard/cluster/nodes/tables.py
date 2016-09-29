@@ -16,9 +16,9 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext_lazy
 
 from horizon import tables
-from horizon.utils import filters
 
 from senlin_dashboard import api
+from senlin_dashboard import exceptions
 
 
 class CreateNode(tables.LinkAction):
@@ -43,8 +43,8 @@ class DeleteNode(tables.DeleteAction):
     @staticmethod
     def action_past(count):
         return ungettext_lazy(
-            u"Deleted Node",
-            u"Deleted Nodes",
+            u"Scheduled deletion of Node",
+            u"Scheduled deletion of Nodes",
             count
         )
 
@@ -52,12 +52,23 @@ class DeleteNode(tables.DeleteAction):
         api.senlin.node_delete(request, obj_id)
 
 
+class UpdateNode(tables.LinkAction):
+    name = "update"
+    verbose_name = _("Update Node")
+    url = "horizon:cluster:nodes:update"
+    classes = ("ajax-modal",)
+    icon = "pencil"
+
+
 class UpdateRow(tables.Row):
     ajax = True
 
     def get_data(self, request, node_id):
-        node = api.senlin.node_get(request, node_id)
-        return node
+        try:
+            node = api.senlin.node_get(request, node_id)
+            return node
+        except exceptions.ResourceNotFound:
+            raise exceptions.NOT_FOUND
 
 
 def get_profile_link(node):
@@ -71,8 +82,14 @@ def get_physical_link(node):
                             args=[node.physical_id])
 
 
+def get_cluster_link(node):
+    if node.cluster_id:
+        return reverse_lazy('horizon:cluster:clusters:detail',
+                            args=[node.cluster_id])
+
+
 def get_updated_time(object):
-    return filters.parse_isotime(object.updated_at) or None
+    return object.updated_at or None
 
 
 class NodesTable(tables.DataTable):
@@ -80,26 +97,29 @@ class NodesTable(tables.DataTable):
         ("INIT", None),
         ("ACTIVE", True),
         ("ERROR", False),
-        ("DELETED", False),
         ("WARNING", None),
         ("CREATING", None),
         ("UPDATING", None),
         ("DELETING", None),
+        ("RECOVERING", None),
     )
 
     STATUS_DISPLAY_CHOICES = (
         ("INIT", pgettext_lazy("Current status of a Node", u"INIT")),
         ("ACTIVE", pgettext_lazy("Current status of a Node", u"ACTIVE")),
         ("ERROR", pgettext_lazy("Current status of a Node", u"ERROR")),
-        ("DELETED", pgettext_lazy("Current status of a Node", u"DELETED")),
         ("WARNING", pgettext_lazy("Current status of a Node", u"WARNING")),
         ("CREATING", pgettext_lazy("Current status of a Node", u"CREATING")),
         ("UPDATING", pgettext_lazy("Current status of a Node", u"UPDATING")),
         ("DELETING", pgettext_lazy("Current status of a Node", u"DELETING")),
+        ("RECOVERING", pgettext_lazy("Current status of a Node",
+                                     u"RECOVERING")),
     )
 
-    name = tables.Column("name", verbose_name=_("Name"),
-                         link="horizon:cluster:nodes:detail")
+    name = tables.WrappingColumn(
+        "name",
+        verbose_name=_("Name"),
+        link="horizon:cluster:nodes:detail")
     profile_name = tables.Column("profile_name",
                                  link=get_profile_link,
                                  verbose_name=_("Profile Name"))
@@ -107,6 +127,9 @@ class NodesTable(tables.DataTable):
                                 link=get_physical_link,
                                 verbose_name=_("Physical ID"))
     role = tables.Column("role", verbose_name=_("Role"))
+    cluster_id = tables.Column("cluster_id",
+                               link=get_cluster_link,
+                               verbose_name=_("Cluster ID"))
     status = tables.Column("status",
                            verbose_name=_("Status"),
                            status=True,
@@ -117,9 +140,6 @@ class NodesTable(tables.DataTable):
     created = tables.Column(
         "created_at",
         verbose_name=_("Created"),
-        filters=(
-            filters.parse_isotime,
-        )
     )
     updated = tables.Column(
         get_updated_time,
@@ -134,4 +154,5 @@ class NodesTable(tables.DataTable):
         table_actions = (tables.FilterAction,
                          CreateNode,
                          DeleteNode,)
-        row_actions = (DeleteNode,)
+        row_actions = (UpdateNode,
+                       DeleteNode,)

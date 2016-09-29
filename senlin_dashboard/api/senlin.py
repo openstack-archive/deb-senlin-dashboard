@@ -12,8 +12,11 @@
 
 from django.conf import settings
 
+from horizon.utils import functions as utils
 from horizon.utils import memoized
+
 from openstack_dashboard.api import base
+from senlin_dashboard.api import utils as api_utils
 from senlinclient import client as senlin_client
 
 USER_AGENT = 'python-senlinclient'
@@ -21,12 +24,19 @@ USER_AGENT = 'python-senlinclient'
 
 class Cluster(base.APIResourceWrapper):
     _attrs = ['id', 'name', 'status', 'created_at', 'updated_at',
-              'profile_name', 'profile_id', 'status_reason']
+              'profile_name', 'profile_id', 'status_reason',
+              'max_size', 'min_size', 'desired_capacity', 'timeout',
+              'metadata']
+
+
+class ClusterPolicy(base.APIResourceWrapper):
+    _attrs = ['id', 'policy_name', 'policy_type', 'enabled',
+              'cluster_id']
 
 
 class Profile(base.APIResourceWrapper):
     _attrs = ['id', 'name', 'type_name', 'created_at', 'updated_at',
-              'permission', 'metadata', 'spec']
+              'metadata', 'spec']
 
 
 class ProfileType(base.APIResourceWrapper):
@@ -41,12 +51,17 @@ class Policy(base.APIResourceWrapper):
 class Node(base.APIResourceWrapper):
     _attrs = ['id', 'name', 'status', 'created_at', 'updated_at',
               'profile_name', 'status_reason', 'physical_id', 'role',
-              'profile_id', 'profile_url']
+              'profile_id', 'profile_url', 'cluster_id', 'metadata']
 
 
 class Event(base.APIResourceWrapper):
     _attrs = ['id', 'obj_id', 'obj_name', 'timestamp', 'status',
               'status_reason', 'action']
+
+
+class Receiver(base.APIResourceWrapper):
+    _attrs = ['id', 'name', 'type', 'cluster_id', 'action', 'created_at',
+              'updated_at', 'channel']
 
 
 @memoized.memoized
@@ -62,10 +77,37 @@ def senlinclient(request):
     return senlin_client.Client(api_version, {}, USER_AGENT, **kwargs)
 
 
-def cluster_list(request, params):
+def cluster_list(request, sort_dir='desc', sort_key='created_at',
+                 marker=None, paginate=False, reversed_order=False):
     """Returns all clusters."""
-    clusters = senlinclient(request).clusters(**params)
-    return [Cluster(c) for c in clusters]
+
+    limit = getattr(settings, 'API_RESULT_LIMIT', 1000)
+    page_size = utils.get_page_size(request)
+
+    if paginate:
+        request_size = page_size + 1
+    else:
+        request_size = limit
+
+    if reversed_order:
+        sort_dir = 'desc' if sort_dir == 'asc' else 'asc'
+
+    params = {
+        'sort': '%s:%s' % (sort_key, sort_dir),
+        'limit': request_size,
+        'marker': marker}
+
+    clusters_iter = senlinclient(request).clusters(**params)
+
+    if paginate:
+        clusters, has_more_data, has_prev_data = api_utils.update_pagination(
+            clusters_iter, request_size, page_size, marker,
+            sort_dir, sort_key, reversed_order)
+
+        return [Cluster(p) for p in clusters], has_more_data, has_prev_data
+    else:
+        clusters = list(clusters_iter)
+        return [Cluster(p) for p in clusters]
 
 
 def cluster_create(request, params):
@@ -85,10 +127,56 @@ def cluster_get(request, cluster):
     return Cluster(cluster)
 
 
-def profile_list(request, params):
+def cluster_attach_policy(request, cluster, policy, params):
+    """Attach policy to a specific cluster"""
+    return senlinclient(request).cluster_attach_policy(
+        cluster, policy, **params)
+
+
+def cluster_detach_policy(request, cluster, policy):
+    """Detach policy from cluster."""
+    senlinclient(request).cluster_detach_policy(
+        cluster, policy)
+
+
+def cluster_policy_list(request, cluster, params):
+    """List policies from cluster."""
+    policies = senlinclient(request).cluster_policies(
+        cluster, **params)
+    return [ClusterPolicy(p) for p in policies]
+
+
+def profile_list(request, sort_dir='desc', sort_key='created_at',
+                 marker=None, paginate=False, reversed_order=False):
     """Returns all profiles."""
-    profiles = senlinclient(request).profiles(**params)
-    return [Profile(p) for p in profiles]
+
+    limit = getattr(settings, 'API_RESULT_LIMIT', 1000)
+    page_size = utils.get_page_size(request)
+
+    if paginate:
+        request_size = page_size + 1
+    else:
+        request_size = limit
+
+    if reversed_order:
+        sort_dir = 'desc' if sort_dir == 'asc' else 'asc'
+
+    params = {
+        'sort': '%s:%s' % (sort_key, sort_dir),
+        'limit': request_size,
+        'marker': marker}
+
+    profiles_iter = senlinclient(request).profiles(**params)
+
+    if paginate:
+        profiles, has_more_data, has_prev_data = api_utils.update_pagination(
+            profiles_iter, request_size, page_size, marker,
+            sort_dir, sort_key, reversed_order)
+
+        return [Profile(p) for p in profiles], has_more_data, has_prev_data
+    else:
+        profiles = list(profiles_iter)
+        return [Profile(p) for p in profiles]
 
 
 def profile_get(request, profile):
@@ -114,10 +202,36 @@ def profile_delete(request, profile):
     senlinclient(request).delete_profile(profile)
 
 
-def policy_list(request, params):
+def policy_list(request, sort_dir='desc', sort_key='created_at',
+                marker=None, paginate=False, reversed_order=False):
     """Returns all policies."""
-    policies = senlinclient(request).policies(**params)
-    return [Policy(p) for p in policies]
+    limit = getattr(settings, 'API_RESULT_LIMIT', 1000)
+    page_size = utils.get_page_size(request)
+
+    if paginate:
+        request_size = page_size + 1
+    else:
+        request_size = limit
+
+    if reversed_order:
+        sort_dir = 'desc' if sort_dir == 'asc' else 'asc'
+
+    params = {
+        'sort': '%s:%s' % (sort_key, sort_dir),
+        'limit': request_size,
+        'marker': marker}
+
+    policies_iter = senlinclient(request).policies(**params)
+
+    if paginate:
+        policies, has_more_data, has_prev_data = api_utils.update_pagination(
+            policies_iter, request_size, page_size, marker,
+            sort_dir, sort_key, reversed_order)
+
+        return [Policy(p) for p in policies], has_more_data, has_prev_data
+    else:
+        policies = list(policies_iter)
+        return [Policy(p) for p in policies]
 
 
 def policy_create(request, params):
@@ -137,10 +251,39 @@ def policy_get(request, policy):
     return policy
 
 
-def node_list(request, params):
+def node_list(request, sort_dir='desc', sort_key='created_at',
+              marker=None, paginate=False, reversed_order=False,
+              cluster_id=None):
     """Returns all nodes."""
-    nodes = senlinclient(request).nodes(**params)
-    return [Node(p) for p in nodes]
+
+    limit = getattr(settings, 'API_RESULT_LIMIT', 1000)
+    page_size = utils.get_page_size(request)
+
+    if paginate:
+        request_size = page_size + 1
+    else:
+        request_size = limit
+
+    if reversed_order:
+        sort_dir = 'desc' if sort_dir == 'asc' else 'asc'
+
+    params = {
+        'sort': '%s:%s' % (sort_key, sort_dir),
+        'limit': request_size,
+        'marker': marker,
+        'cluster_id': cluster_id}
+
+    nodes_iter = senlinclient(request).nodes(**params)
+
+    if paginate:
+        nodes, has_more_data, has_prev_data = api_utils.update_pagination(
+            nodes_iter, request_size, page_size, marker,
+            sort_dir, sort_key, reversed_order)
+
+        return [Node(n) for n in nodes], has_more_data, has_prev_data
+    else:
+        nodes = list(nodes_iter)
+        return [Node(n) for n in nodes]
 
 
 def node_create(request, params):
@@ -160,7 +303,65 @@ def node_get(request, node):
     return Node(node)
 
 
+def node_update(request, node, params):
+    """Update node"""
+    node = senlinclient(request).update_node(node, **params)
+    return node
+
+
 def event_list(request, params):
     """Returns events."""
     events = senlinclient(request).events(**params)
     return [Event(c) for c in events]
+
+
+def receiver_list(request, sort_dir='desc', sort_key='created_at',
+                  marker=None, paginate=False, reversed_order=False,
+                  filters=None):
+    """Returns all receivers."""
+
+    has_prev_data = False
+    has_more_data = False
+
+    limit = getattr(settings, 'API_RESULT_LIMIT', 1000)
+    page_size = utils.get_page_size(request)
+
+    if paginate:
+        request_size = page_size + 1
+    else:
+        request_size = limit
+
+    if reversed_order:
+        sort_dir = 'desc' if sort_dir == 'asc' else 'asc'
+
+    params = {
+        'sort': '%s:%s' % (sort_key, sort_dir),
+        'limit': request_size,
+        'marker': marker}
+
+    receivers_iter = senlinclient(request).receivers(**params)
+
+    if paginate:
+        receivers, has_more_data, has_prev_data = api_utils.update_pagination(
+            receivers_iter, request_size, page_size, marker,
+            sort_dir, sort_key, reversed_order)
+    else:
+        receivers = list(receivers_iter)
+
+    return [Receiver(r) for r in receivers], has_more_data, has_prev_data
+
+
+def receiver_create(request, params):
+    """Create receiver"""
+    receiver = senlinclient(request).create_receiver(**params)
+    return Receiver(receiver)
+
+
+def receiver_delete(request, receiver):
+    """Delete receiver."""
+    senlinclient(request).delete_receiver(receiver)
+
+
+def receiver_get(request, receiver):
+    receiver = senlinclient(request).get_receiver(receiver)
+    return Receiver(receiver)

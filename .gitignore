@@ -1,10 +1,12 @@
 *.pyc
 *.swp
+*.swo
 *.sqlite3
 .environment_version
 .selenium_log
 .coverage*
 .noseids
+.DS_Store
 .DS_STORE
 *.egg/
 *.egg-info/
@@ -27,3 +29,9 @@ ChangeLog
 tags
 openstack_dashboard/dummydb.sqlite
 *.lock
+.idea
+node_modules
+npm-debug.log
+
+# Files created by releasenotes build
+releasenotes/build

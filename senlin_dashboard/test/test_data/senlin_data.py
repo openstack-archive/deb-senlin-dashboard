@@ -48,6 +48,7 @@ def data(TEST):
     # Clusters
     TEST.clusters = test_data_utils.TestDataContainer()
     cluster_1 = mock.Mock()
+    cluster_1.id = "123456"
     cluster_1.name = "test-cluster"
 
     TEST.clusters.add(cluster_1)
@@ -55,10 +56,16 @@ def data(TEST):
     # Policies
     TEST.policies = test_data_utils.TestDataContainer()
     policy_1 = mock.Mock()
-    policy_1.name = "test-policy"
+    policy_1.id = "123"
+    policy_1.name = "test-policy01"
     policy_1.spec = {}
+    policy_2 = mock.Mock()
+    policy_1.id = "456"
+    policy_2.name = "test-policy02"
+    policy_2.spec = {}
 
     TEST.policies.add(policy_1)
+    TEST.policies.add(policy_2)
 
     # Nodes
     TEST.nodes = test_data_utils.TestDataContainer()
@@ -74,3 +81,10 @@ def data(TEST):
     event_1.name = "test-event"
 
     TEST.events.add(event_1)
+
+    # Receivers
+    TEST.receivers = test_data_utils.TestDataContainer()
+    receiver_1 = mock.Mock()
+    receiver_1.name = "test-receiver"
+
+    TEST.receivers.add(receiver_1)

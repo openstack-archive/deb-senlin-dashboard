@@ -10,15 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.core.urlresolvers import reverse
 from django.core.urlresolvers import reverse_lazy
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext_lazy
 
 from horizon import tables
-from horizon.utils import filters
 
 from senlin_dashboard import api
+from senlin_dashboard import exceptions
 
 
 class CreateCluster(tables.LinkAction):
@@ -30,13 +31,21 @@ class CreateCluster(tables.LinkAction):
     ajax = True
 
 
+class ManagePolicies(tables.LinkAction):
+    name = "manage_policies"
+    verbose_name = _("Manage Policies")
+    url = "horizon:cluster:clusters:manage_policies"
+    classes = ("ajax-modal",)
+    icon = "pencil"
+
+
 def get_profile_link(cluster):
     return reverse_lazy('horizon:cluster:profiles:detail',
                         args=[cluster.profile_id])
 
 
 def get_updated_time(object):
-    return filters.parse_isotime(object.updated_at) or None
+    return object.updated_at or None
 
 
 class DeleteCluster(tables.DeleteAction):
@@ -52,8 +61,8 @@ class DeleteCluster(tables.DeleteAction):
     @staticmethod
     def action_past(count):
         return ungettext_lazy(
-            u"Deleted Cluster",
-            u"Deleted Clusters",
+            u"Scheduled deletion of Cluster",
+            u"Scheduled deletion of Clusters",
             count
         )
 
@@ -65,8 +74,11 @@ class UpdateRow(tables.Row):
     ajax = True
 
     def get_data(self, request, cluster_id):
-        cluster = api.senlin.cluster_get(request, cluster_id)
-        return cluster
+        try:
+            cluster = api.senlin.cluster_get(request, cluster_id)
+            return cluster
+        except exceptions.ResourceNotFound:
+            raise exceptions.NOT_FOUND
 
 
 class ClustersTable(tables.DataTable):
@@ -74,19 +86,20 @@ class ClustersTable(tables.DataTable):
         ("INIT", None),
         ("ACTIVE", True),
         ("ERROR", False),
-        ("DELETED", False),
         ("CRITICAL", False),
-        ("WARNING", None),
+        ("WARNING", False),
         ("CREATING", None),
         ("UPDATING", None),
         ("DELETING", None),
+        ("RESIZING", None),
+        ("CHECKING", None),
+        ("RECOVERING", None),
     )
 
     STATUS_DISPLAY_CHOICES = (
         ("INIT", pgettext_lazy("Current status of a Cluster", u"INIT")),
         ("ACTIVE", pgettext_lazy("Current status of a Cluster", u"ACTIVE")),
         ("ERROR", pgettext_lazy("Current status of a Cluster", u"ERROR")),
-        ("DELETED", pgettext_lazy("Current status of a Cluster", u"DELETED")),
         ("CRITICAL", pgettext_lazy("Current status of a Cluster",
                                    u"CRITICAL")),
         ("WARNING", pgettext_lazy("Current status of a Cluster", u"WARNING")),
@@ -96,10 +109,18 @@ class ClustersTable(tables.DataTable):
                                    u"UPDATING")),
         ("DELETING", pgettext_lazy("Current status of a Cluster",
                                    u"DELETING")),
+        ("RESIZING", pgettext_lazy("Current status of a Cluster",
+                                   u"RESIZING")),
+        ("CHECKING", pgettext_lazy("Current status of a Cluster",
+                                   u"CHECKING")),
+        ("RECOVERING", pgettext_lazy("Current status of a Cluster",
+                                     u"RECOVERING")),
     )
 
-    name = tables.Column("name", verbose_name=_("Name"),
-                         link="horizon:cluster:clusters:detail")
+    name = tables.WrappingColumn(
+        "name",
+        verbose_name=_("Name"),
+        link="horizon:cluster:clusters:detail")
     status = tables.Column("status",
                            verbose_name=_("Status"),
                            status=True,
@@ -113,9 +134,6 @@ class ClustersTable(tables.DataTable):
     created = tables.Column(
         "created_at",
         verbose_name=_("Created"),
-        filters=(
-            filters.parse_isotime,
-        )
     )
     updated = tables.Column(
         get_updated_time,
@@ -130,4 +148,49 @@ class ClustersTable(tables.DataTable):
         table_actions = (tables.FilterAction,
                          CreateCluster,
                          DeleteCluster,)
-        row_actions = (DeleteCluster,)
+        row_actions = (ManagePolicies,
+                       DeleteCluster,)
+
+
+class DetachPolicy(tables.BatchAction):
+    name = "detach"
+    classes = ('btn-danger', 'btn-detach')
+
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u"Detach Policy",
+            u"Detach Policies",
+            count
+        )
+
+    # This action is asynchronous.
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u"Detaching Policy",
+            u"Detaching Policies",
+            count
+        )
+
+    def action(self, request, obj_id):
+        policy_obj = self.table.get_object_by_id(obj_id)
+        api.senlin.cluster_detach_policy(request,
+                                         policy_obj.cluster_id,
+                                         obj_id)
+
+    def get_success_url(self, request):
+        return reverse('horizon:cluster:clusters:index')
+
+
+class AttachedPoliciesTable(tables.DataTable):
+    policy_name = tables.Column("policy_name", verbose_name=_("Name"))
+    policy_type = tables.Column("policy_type", verbose_name=_("Type"))
+    enabled = tables.Column("enabled", verbose_name=_("Enabled"))
+
+    class Meta(object):
+        name = "attached_policies"
+        hidden_title = False
+        verbose_name = _("Attached Policies")
+        table_actions = (DetachPolicy,)
+        row_actions = (DetachPolicy,)

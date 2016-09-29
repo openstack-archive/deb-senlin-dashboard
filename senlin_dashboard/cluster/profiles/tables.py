@@ -14,7 +14,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext_lazy
 
 from horizon import tables
-from horizon.utils import filters
 
 from senlin_dashboard import api
 from senlin_dashboard.cluster.profiles import forms as profiles_forms
@@ -59,19 +58,22 @@ class DeleteProfile(tables.DeleteAction):
 
 
 def get_updated_time(object):
-    return filters.parse_isotime(object.updated_at) or None
+    return object.updated_at or None
+
+
+def get_profile_name(profile):
+    return getattr(profile, "name").strip() or profile.id
 
 
 class ProfilesTable(tables.DataTable):
-    name = tables.Column("name", verbose_name=_("Name"),
-                         link=profiles_forms.DETAIL_URL)
+    name = tables.WrappingColumn(
+        get_profile_name,
+        verbose_name=_("Name"),
+        link=profiles_forms.DETAIL_URL)
     type_name = tables.Column("type_name", verbose_name=_("Type"))
     created = tables.Column(
         "created_at",
         verbose_name=_("Created"),
-        filters=(
-            filters.parse_isotime,
-        )
     )
     updated = tables.Column(
         get_updated_time,

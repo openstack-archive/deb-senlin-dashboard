@@ -10,10 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from django.conf import urls
-import openstack_dashboard.urls
+from django.views import generic
 
-urlpatterns = urls.patterns(
-    '',
-    urls.url(r'', urls.include(openstack_dashboard.urls))
-)
+
+class IndexView(generic.TemplateView):
+    template_name = 'angular.html'

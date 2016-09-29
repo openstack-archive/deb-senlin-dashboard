@@ -26,10 +26,10 @@ from senlin_dashboard.api import senlin
 
 class CreateForm(forms.SelfHandlingForm):
     name = forms.CharField(max_length=255, label=_("Node Name"))
-    profile_id = forms.ChoiceField(
+    profile_id = forms.ThemableChoiceField(
         label=_("Profile"),
         help_text=_("Profile used for this node."))
-    cluster_id = forms.ChoiceField(
+    cluster_id = forms.ThemableChoiceField(
         label=_("Cluster"),
         required=False,
         help_text=_("Cluster for this node."))
@@ -46,12 +46,12 @@ class CreateForm(forms.SelfHandlingForm):
 
     def __init__(self, request, *args, **kwargs):
         super(CreateForm, self).__init__(request, *args, **kwargs)
-        profiles = senlin.profile_list(request, params={})
+        profiles = senlin.profile_list(request)
         self.fields['profile_id'].choices = (
             [("", _("Select Profile"))] + [(profile.id, profile.name)
                                            for profile in profiles])
 
-        clusters = senlin.cluster_list(request, params={})
+        clusters = senlin.cluster_list(request)
         self.fields['cluster_id'].choices = (
             [("", _("Select Cluster"))] + [(cluster.id, cluster.name)
                                            for cluster in clusters])
@@ -80,3 +80,54 @@ class CreateForm(forms.SelfHandlingForm):
             exceptions.handle(request,
                               _("Unable to create node."),
                               redirect=redirect)
+
+
+class UpdateNodeForm(forms.SelfHandlingForm):
+    node_id = forms.CharField(widget=forms.HiddenInput())
+    name = forms.CharField(max_length=255, label=_("Node Name"))
+    profile_id = forms.ThemableChoiceField(
+        label=_("Profile"),
+        help_text=_("Profile used for this node."))
+    role = forms.CharField(
+        max_length=255,
+        label=_("Role"),
+        required=False,
+        help_text=_("Role for this node in the specific cluster."))
+    metadata = forms.CharField(
+        label=_("Metadata"),
+        required=False,
+        help_text=_("YAML formatted metadata."),
+        widget=forms.Textarea(attrs={'rows': 4}))
+
+    def __init__(self, request, *args, **kwargs):
+        super(UpdateNodeForm, self).__init__(request, *args, **kwargs)
+        profiles = senlin.profile_list(request)
+        self.fields['profile_id'].choices = (
+            [("", _("Select Profile"))] + [(profile.id, profile.name)
+                                           for profile in profiles])
+
+    def handle(self, request, data):
+        if not data['metadata']:
+            metadata = {}
+        else:
+            try:
+                metadata = yaml.load(data['metadata'])
+            except Exception as ex:
+                raise Exception(_('The specified metadata is not a valid '
+                                  'YAML: %s') % six.text_type(ex))
+        data['metadata'] = metadata
+
+        try:
+            node = senlin.node_update(request, data.get('node_id'), data)
+            messages.success(
+                request,
+                _('Your node %s update request'
+                  ' has been accepted for processing.') %
+                data['name'])
+            return node
+        except Exception:
+            redirect = reverse("horizon:cluster:nodes:index")
+            exceptions.handle(request,
+                              _("Unable to update node."),
+                              redirect=redirect)
+            return False

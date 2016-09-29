@@ -1,4 +1,4 @@
-{% load i18n parse_date nbsp %}
+{% load i18n nbsp %}
 
 <div class="detail">
   <h4>{% trans "Information" %}</h4>
@@ -8,6 +8,10 @@
     <dd>{{ node.name }}</dd>
     <dt>{% trans "Profile Name" %}</dt>
     <dd><a href="{{ node.profile_url }}">{{ node.profile_name }}</a></dd>
+    {% if node.cluster_id %}
+      <dt>{% trans "Cluster ID" %}</dt>
+      <dd><a href="{{ node.cluster_url }}">{{ node.cluster_id }}</a></dd>
+    {% endif %}
     <dt>{% trans "ID" %}</dt>
     <dd>{{ node.id }}</dd>
     <dt>{% trans "Status" %}</dt>
@@ -19,10 +23,10 @@
     <dd>{{ node.role }}</dd>
     {% endif %}
     <dt>{% trans "Created" context "Created time" %}</dt>
-    <dd>{{ node.created_at|parse_date }}</dd>
+    <dd>{{ node.created_at }}</dd>
     {% if node.updated_at %}
     <dt>{% trans "Updated" context "Updated time" %}</dt>
-    <dd>{{ node.updated_at|parse_date }}</dd>
+    <dd>{{ node.updated_at }}</dd>
     {% endif %}
   </dl>
 

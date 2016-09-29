@@ -1,16 +1,14 @@
-# Copyright 2015 99Cloud Technologies Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
 #
-#    Licensed under the Apache License, Version 2.0 (the "License"); you may
-#    not use this file except in compliance with the License. You may obtain
-#    a copy of the License at
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-#         http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#    License for the specific language governing permissions and limitations
-#    under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 
 import six
 import yaml
@@ -31,7 +29,7 @@ INDEX_URL = "horizon:cluster:clusters:index"
 
 class CreateForm(forms.SelfHandlingForm):
     name = forms.CharField(max_length=255, label=_("Cluster Name"))
-    profile_id = forms.ChoiceField(label=_("Profile"))
+    profile_id = forms.ThemableChoiceField(label=_("Profile"))
     min_size = forms.IntegerField(
         label=_("Min Size"),
         required=False,
@@ -48,9 +46,10 @@ class CreateForm(forms.SelfHandlingForm):
         initial=0,
         help_text=_("Desired capacity of the cluster. Default to 0."))
     # Hide the parent field
-    parent = forms.ChoiceField(label=_("Parent Cluster"),
-                               required=False,
-                               widget=forms.HiddenInput())
+    parent = forms.ThemableChoiceField(
+        label=_("Parent Cluster"),
+        required=False,
+        widget=forms.HiddenInput())
     timeout = forms.IntegerField(
         label=_("Timeout"),
         required=False,
@@ -64,9 +63,10 @@ class CreateForm(forms.SelfHandlingForm):
 
     def __init__(self, request, *args, **kwargs):
         super(CreateForm, self).__init__(request, *args, **kwargs)
-        profiles = senlin.profile_list(request, params={})
-        self.fields['profile_id'].choices = [(profile.id, profile.name)
-                                             for profile in profiles]
+        profiles = senlin.profile_list(request)
+        self.fields['profile_id'].choices = (
+            [("", _("Select Profile"))] + [(profile.id, profile.name)
+                                           for profile in profiles])
 
     def handle(self, request, data):
         try:
@@ -91,4 +91,42 @@ class CreateForm(forms.SelfHandlingForm):
             redirect = reverse(INDEX_URL)
             exceptions.handle(request,
                               _("Unable to create cluster."),
+                              redirect=redirect)
+
+
+class ManagePoliciesForm(forms.SelfHandlingForm):
+    cluster_id = forms.CharField(widget=forms.HiddenInput())
+    policies = forms.ThemableChoiceField(label=_("Policies"))
+    enabled = forms.BooleanField(
+        label=_("Enabled"),
+        initial=True,
+        required=False,
+        help_text=_("Whether the policy should be enabled once attached. "
+                    "Default to enabled."))
+
+    def __init__(self, request, *args, **kwargs):
+        super(ManagePoliciesForm, self).__init__(request, *args, **kwargs)
+        cluster_policies = senlin.cluster_policy_list(
+            self.request, kwargs['initial']['cluster_id'], {})
+        cluster_policies_ids = [policy.id for policy in cluster_policies]
+        policies = senlin.policy_list(self.request)
+        available_policies = [(policy.id, policy.name) for policy in policies
+                              if policy.id not in cluster_policies_ids]
+        self.fields['policies'].choices = (
+            [("", _("Select Policy"))] + available_policies)
+
+    def handle(self, request, data):
+        try:
+            params = {"enabled": data.pop('enabled')}
+            attach = senlin.cluster_attach_policy(
+                request, data["cluster_id"], data['policies'], params)
+            msg = _('Attaching policy %(policy)s to cluster '
+                    '%(cluster)s.') % {"policy": data['policies'],
+                                       "cluster": data['cluster_id']}
+            messages.success(request, msg)
+            return attach
+        except Exception:
+            redirect = reverse(INDEX_URL)
+            exceptions.handle(request,
+                              _("Unable to attach policy."),
                               redirect=redirect)
