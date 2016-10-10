@@ -1,0 +1,61 @@
+Description: Fix Django 1.10 Compatibility
+Author: Rob Cresswell <robert.cresswell@outlook.com>
+Date: Wed, 5 Oct 2016 09:51:24 +0000 (+0100)
+X-Git-Url: https://review.openstack.org/gitweb?p=openstack%2Fsenlin-dashboard.git;a=commitdiff_plain;h=ddf8b00fe49c571994955eff25c1e2d6e7255c06
+Change-Id: Idb639408ee4b476b183d5dcb0d596973631acbe6
+Origin: upstream, https://review.openstack.org/382517
+Last-Update: 2016-10-10
+
+diff --git a/senlin_dashboard/cluster/profiles/tests.py b/senlin_dashboard/cluster/profiles/tests.py
+index 7f2deb0..23f1b8d 100644
+--- a/senlin_dashboard/cluster/profiles/tests.py
++++ b/senlin_dashboard/cluster/profiles/tests.py
+@@ -65,17 +65,16 @@ class ProfilesTest(test.TestCase):
+     def test_create_profile(self):
+         profile = self.profiles.list()[0]
+ 
+-        spec_yaml = """
+-        type: os.nova.server
+-        version: 1.0
+-        properties:
+-          name: cirros_server
+-          flavor: 1
+-          image: "cirros-0.3.4-x86_64-uec"
+-          key_name: oskey
+-          networks:
+-           - network: private
+-        """
++        spec_yaml = \
++            'type: os.nova.server\n'\
++            'version: 1.0\n'\
++            'properties:\n'\
++            '  name: cirros_server\n'\
++            '  flavor: 1\n'\
++            '  image: "cirros-0.3.4-x86_64-uec"\n'\
++            '  key_name: oskey\n'\
++            '  networks:\n'\
++            '    - network: private\n'
+ 
+         formdata = {
+             'name': 'test-profile',
+diff --git a/tox.ini b/tox.ini
+index 83f88b5..0ac4ce3 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -27,6 +27,16 @@ basepython = python2.7
+ commands = pip install django>=1.8,<1.9
+            /bin/bash run_tests.sh -N --no-pep8 {posargs}
+ 
++[testenv:py27dj19]
++basepython = python2.7
++commands = pip install django>=1.9,<1.10
++           {envpython} {toxinidir}/manage.py test {posargs}
++
++[testenv:py27dj110]
++basepython = python2.7
++commands = pip install django>=1.10,<1.11
++           {envpython} {toxinidir}/manage.py test {posargs}
++
+ [testenv:cover]
+ commands = python setup.py testr --coverage --testr-args='{posargs}'
+ 
