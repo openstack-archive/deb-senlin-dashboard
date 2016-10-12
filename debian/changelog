@@ -1,3 +1,9 @@
+senlin-dashboard (0.4.0-2) unstable; urgency=medium
+
+  * Uploading to unstable.
+
+ -- Thomas Goirand <zigo@debian.org>  Wed, 12 Oct 2016 09:42:28 +0200
+
 senlin-dashboard (0.4.0-1) experimental; urgency=medium
 
   * Initial release. (Closes: #812964)
