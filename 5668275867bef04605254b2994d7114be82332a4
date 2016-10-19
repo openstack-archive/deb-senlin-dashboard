@@ -1,0 +1,12 @@
+Code-Review+2: Liuqing Jing <jing.liuqing@99cloud.net>
+Code-Review+1: Shu Muto <shu-mutou@rf.jp.nec.com>
+Code-Review+1: Kenji Ishii <ken-ishii@sx.jp.nec.com>
+Code-Review+1: Allen <chen.qiaomin@99cloud.net>
+Code-Review+2: Qiming Teng <tengqim@cn.ibm.com>
+Workflow+1: Qiming Teng <tengqim@cn.ibm.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 18 Oct 2016 11:36:12 +0000
+Reviewed-on: https://review.openstack.org/387033
+Project: openstack/deb-senlin-dashboard
+Branch: refs/heads/master
