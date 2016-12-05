@@ -1,0 +1,10 @@
+Code-Review+2: Qiming Teng <tengqim@cn.ibm.com>
+Code-Review+1: Thai Tran <tqtran@us.ibm.com>
+Code-Review+1: Shu Muto <shu-mutou@rf.jp.nec.com>
+Workflow+1: Qiming Teng <tengqim@cn.ibm.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 05 Dec 2016 08:25:15 +0000
+Reviewed-on: https://review.openstack.org/405395
+Project: openstack/deb-senlin-dashboard
+Branch: refs/heads/stable/newton
