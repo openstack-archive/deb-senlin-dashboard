@@ -1,0 +1,9 @@
+Code-Review+2: Kenji Ishii <ken-ishii@sx.jp.nec.com>
+Code-Review+2: Shu Muto <shu-mutou@rf.jp.nec.com>
+Workflow+1: Shu Muto <shu-mutou@rf.jp.nec.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 26 Dec 2016 01:39:30 +0000
+Reviewed-on: https://review.openstack.org/414433
+Project: openstack/deb-senlin-dashboard
+Branch: refs/heads/master
