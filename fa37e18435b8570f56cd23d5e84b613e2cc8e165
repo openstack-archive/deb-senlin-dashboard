@@ -1,0 +1,10 @@
+Code-Review+1: Thai Tran <tqtran@us.ibm.com>
+Code-Review+2: Kenji Ishii <ken-ishii@sx.jp.nec.com>
+Code-Review+2: Qiming Teng <tengqim@cn.ibm.com>
+Workflow+1: Qiming Teng <tengqim@cn.ibm.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 04 Jan 2017 06:20:23 +0000
+Reviewed-on: https://review.openstack.org/415611
+Project: openstack/deb-senlin-dashboard
+Branch: refs/heads/master
