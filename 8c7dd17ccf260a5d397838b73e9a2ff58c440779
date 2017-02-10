@@ -1,0 +1,9 @@
+Code-Review+2: Shu Muto <shu-mutou@rf.jp.nec.com>
+Code-Review+2: Qiming Teng <tengqim@cn.ibm.com>
+Workflow+1: Qiming Teng <tengqim@cn.ibm.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 10 Feb 2017 05:06:39 +0000
+Reviewed-on: https://review.openstack.org/431325
+Project: openstack/deb-senlin-dashboard
+Branch: refs/heads/master
